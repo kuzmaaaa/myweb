@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>计算器</title>
+
+<link rel="manifest" href='data:application/manifest+json,{"name":"计算器","short_name":"计算器","display":"standalone","start_url":".","background_color":"#000000","theme_color":"#000000"}'>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+  /* 彻底禁止长按弹出菜单和文字选择 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none; /* 禁用系统长按菜单 */
+    -webkit-user-select: none;    /* 禁止选择文字 */
+    user-select: none;
+  }
+
+  body {
+    margin:0;
+    height:100vh;
+    background:#000;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    overflow: hidden; /* 防止滑动 */
+    touch-action: manipulation; /* 优化点击延迟 */
+  }
+
+  .calc {
+    width:320px;
+    background:#000;
+    border-radius:44px;
+    padding:16px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.8);
+  }
+
+  .disp {
+    height:110px;
+    color:#fff;
+    font-size:48px;
+    font-weight:300;
+    text-align:right;
+    display:flex;
+    align-items:flex-end;
+    justify-content:flex-end;
+    padding:0 20px;
+    overflow:hidden;
+  }
+
+  .btns {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:13px;
+    padding:10px 0;
+  }
+
+  button {
+    height:68px;
+    border:none;
+    border-radius:50%;
+    font-size:30px;
+    color:#fff;
+    cursor:pointer;
+    outline: none;
+  }
+
+  .g {background:#a5a5a5;color:#000;}
+  .d {background:#333;}
+  .o {background:#ff9500;}
+  .z {grid-column:span 2;border-radius:34px;text-align:left;padding-left:30px;box-sizing:border-box;}
+</style>
+</head>
+<body oncontextmenu="return false;"> <div class="calc">
+  <div class="disp" id="disp">0</div>
+  <div class="btns">
+    <button class="g" onclick="reset()">AC</button>
+    <button class="g" onclick="neg()">+/-</button>
+    <button class="g" onclick="pct()">%</button>
+    <button class="o" onclick="op('/')">÷</button>
+    <button class="d" onclick="digit('7')">7</button><button class="d" onclick="digit('8')">8</button><button class="d" onclick="digit('9')">9</button><button class="o" onclick="op('×')">×</button>
+    <button class="d" onclick="digit('4')">4</button><button class="d" onclick="digit('5')">5</button><button class="d" onclick="digit('6')">6</button><button class="o" onclick="op('-')">-</button>
+    <button class="d" onclick="digit('1')">1</button><button class="d" onclick="digit('2')">2</button><button class="d" onclick="digit('3')">3</button><button class="o" onclick="op('+')">+</button>
+    <button class="d z" onclick="digit('0')">0</button><button class="d" onclick="digit('.')">.</button>
+    <button class="o" id="eq"
+      ontouchstart="holdStart(event)" ontouchend="holdEnd(event)" ontouchcancel="holdCancel()"
+      onmousedown="holdStart(event)" onmouseup="holdEnd(event)" onmouseleave="holdCancel()">＝</button>
+  </div>
+</div>
+
+<script>
+let disp = document.getElementById('disp');
+let display = '0';
+let savedSum = null;
+let holdTimer = null;
+let isLongHold = false;
+
+function show() {
+  disp.textContent = display || '0';
+}
+
+function digit(n) {
+  if (display === '0' && n !== '.') display = n;
+  else display += n;
+  show();
+}
+
+function reset() {
+  display = '0';
+  savedSum = null;
+  isLongHold = false;
+  show();
+}
+
+function neg() {
+  if (display === '0') return;
+  display = display.startsWith('-') ? display.slice(1) : '-' + display;
+  show();
+}
+
+function pct() {
+  let n = parseFloat(display);
+  if (!isNaN(n)) {
+    display = (n / 100).toString();
+    show();
+  }
+}
+
+function op(operator) {
+  if (/[+\-×÷]$/.test(display)) {
+    display = display.slice(0,-1) + operator;
+  } else {
+    display += operator;
+  }
+  show();
+}
+
+function getDateNumber() {
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const d = now.getDate().toString().padStart(2, '0');
+  const h = now.getHours().toString().padStart(2, '0');
+  const min = now.getMinutes().toString().padStart(2, '0');
+  return parseInt(`${m}${d}${h}${min}`, 10);
+}
+
+function holdStart(e) {
+  // 阻止默认行为，防止某些系统弹出放大镜或菜单
+  isLongHold = false;
+  holdTimer = setTimeout(() => {
+    isLongHold = true;
+    if (savedSum !== null) {
+      const dateNum = getDateNumber();
+      const diff = dateNum - savedSum;
+      display = `${savedSum} + ${diff}`;
+      show();
+    }
+  }, 800); 
+}
+
+function holdEnd(e) {
+  if (e) e.preventDefault(); // 关键：阻止系统默认的点击/长按反馈
+  clearTimeout(holdTimer);
+
+  if (isLongHold) {
+    isLongHold = false;
+    return;
+  }
+
+  if (savedSum === null) {
+    try {
+      let result = eval(display.replace('×','*').replace('÷','/'));
+      if (Number.isFinite(result)) {
+        display = Math.round(result).toString();
+        savedSum = Math.round(result);
+        show();
+      } else {
+        display = '错误';
+        show();
+      }
+    } catch {
+      display = '错误';
+      show();
+    }
+  } else {
+    display = getDateNumber().toString();
+    show();
+  }
+}
+
+function holdCancel() {
+  clearTimeout(holdTimer);
+  isLongHold = false;
+}
+
+show();
+</script>
+</body>
+</html>
