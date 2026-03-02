@@ -15,8 +15,8 @@
   /* 彻底禁止长按弹出菜单和文字选择 */
   * {
     -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none; /* 禁用系统长按菜单 */
-    -webkit-user-select: none;    /* 禁止选择文字 */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
     user-select: none;
   }
 
@@ -28,8 +28,8 @@
     justify-content:center;
     align-items:center;
     font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-    overflow: hidden; /* 防止滑动 */
-    touch-action: manipulation; /* 优化点击延迟 */
+    overflow: hidden;
+    touch-action: manipulation;
   }
 
   .calc {
@@ -43,7 +43,7 @@
   .disp {
     height:110px;
     color:#fff;
-    font-size:48px;
+    font-size:42px; /* 👈 只改了这里：原来是 48px */
     font-weight:300;
     text-align:right;
     display:flex;
@@ -76,17 +76,34 @@
   .z {grid-column:span 2;border-radius:34px;text-align:left;padding-left:30px;box-sizing:border-box;}
 </style>
 </head>
-<body oncontextmenu="return false;"> <div class="calc">
+
+<body oncontextmenu="return false;">
+<div class="calc">
   <div class="disp" id="disp">0</div>
   <div class="btns">
     <button class="g" onclick="reset()">AC</button>
     <button class="g" onclick="neg()">+/-</button>
     <button class="g" onclick="pct()">%</button>
     <button class="o" onclick="op('/')">÷</button>
-    <button class="d" onclick="digit('7')">7</button><button class="d" onclick="digit('8')">8</button><button class="d" onclick="digit('9')">9</button><button class="o" onclick="op('×')">×</button>
-    <button class="d" onclick="digit('4')">4</button><button class="d" onclick="digit('5')">5</button><button class="d" onclick="digit('6')">6</button><button class="o" onclick="op('-')">-</button>
-    <button class="d" onclick="digit('1')">1</button><button class="d" onclick="digit('2')">2</button><button class="d" onclick="digit('3')">3</button><button class="o" onclick="op('+')">+</button>
-    <button class="d z" onclick="digit('0')">0</button><button class="d" onclick="digit('.')">.</button>
+
+    <button class="d" onclick="digit('7')">7</button>
+    <button class="d" onclick="digit('8')">8</button>
+    <button class="d" onclick="digit('9')">9</button>
+    <button class="o" onclick="op('×')">×</button>
+
+    <button class="d" onclick="digit('4')">4</button>
+    <button class="d" onclick="digit('5')">5</button>
+    <button class="d" onclick="digit('6')">6</button>
+    <button class="o" onclick="op('-')">-</button>
+
+    <button class="d" onclick="digit('1')">1</button>
+    <button class="d" onclick="digit('2')">2</button>
+    <button class="d" onclick="digit('3')">3</button>
+    <button class="o" onclick="op('+')">+</button>
+
+    <button class="d z" onclick="digit('0')">0</button>
+    <button class="d" onclick="digit('.')">.</button>
+
     <button class="o" id="eq"
       ontouchstart="holdStart(event)" ontouchend="holdEnd(event)" ontouchcancel="holdCancel()"
       onmousedown="holdStart(event)" onmouseup="holdEnd(event)" onmouseleave="holdCancel()">＝</button>
@@ -150,7 +167,6 @@ function getDateNumber() {
 }
 
 function holdStart(e) {
-  // 阻止默认行为，防止某些系统弹出放大镜或菜单
   isLongHold = false;
   holdTimer = setTimeout(() => {
     isLongHold = true;
@@ -160,11 +176,11 @@ function holdStart(e) {
       display = `${savedSum} + ${diff}`;
       show();
     }
-  }, 800); 
+  }, 800);
 }
 
 function holdEnd(e) {
-  if (e) e.preventDefault(); // 关键：阻止系统默认的点击/长按反馈
+  if (e) e.preventDefault();
   clearTimeout(holdTimer);
 
   if (isLongHold) {
