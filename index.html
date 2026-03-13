@@ -7,8 +7,11 @@
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="计算器">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/71/71403.png">
 
 <style>
+  /* 基础清理与防误触 */
   * {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
@@ -19,19 +22,19 @@
 
   body {
     margin: 0;
-    /* 使用 dvh 确保在移动端浏览器弹出工具栏时也能精准适配 */
-    height: 100dvh;
+    /* 关键：100dvh 完美适配 Safari 动态地址栏 */
+    height: 100dvh; 
     background: #000;
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* 均匀分布显示区和按键区 */
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
-    padding: env(safe-area-inset-top) 5vw env(safe-area-inset-bottom) 5vw;
+    /* 底部额外留白，避开工具栏和小黑条 */
+    padding: env(safe-area-inset-top) 4vw calc(env(safe-area-inset-bottom) + 3vh) 4vw;
     touch-action: none;
   }
 
-  /* 显示区域：占据屏幕上半部分，自动缩放 */
+  /* 上方数字显示区：占满剩余所有空间 */
   .disp-container {
     flex: 1;
     display: flex;
@@ -43,39 +46,35 @@
 
   .disp {
     color: #fff;
-    /* 使用 clamp 限制字体大小，最小 40px，最大 80px，随高度变化 */
-    font-size: clamp(40px, 12vh, 85px);
+    font-size: 20vw;
     font-weight: 300;
     text-align: right;
     white-space: nowrap;
     overflow: hidden;
     width: 100%;
-    /* 数字太长时从右向左显示 */
-    direction: ltr; 
   }
 
-  /* 按键区域容器 */
+  /* 下方按键区：固定结构，防止溢出 */
   .calc-wrapper {
     width: 100%;
-    /* 核心修改：按键区最高只占屏幕的 65%，防止把屏幕撑爆 */
-    max-height: 65dvh;
-    padding-bottom: 10px;
+    /* 强制限制最大高度，防止把下面的按钮挤出屏幕 */
+    max-height: 60dvh; 
   }
 
   .btns {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* 间距随屏幕高度缩放 */
-    gap: 1.5vh 3vw; 
+    /* 行间距和列间距 */
+    gap: 2.5vh 3.5vw; 
   }
 
   button {
     width: 100%;
-    /* 核心修改：按钮高度随屏幕高度动态变化，确保垂直方向不溢出 */
-    height: clamp(50px, 11vh, 85px); 
+    /* 保证按键在各种屏幕下都不会太高或太扁 */
+    height: clamp(50px, 10dvh, 90px);
     border: none;
-    border-radius: 500px; /* 使用大圆角替代 50%，适配椭圆 */
-    font-size: clamp(20px, 4vh, 32px);
+    border-radius: 500px;
+    font-size: clamp(24px, 4.5dvh, 40px);
     color: #fff;
     cursor: pointer;
     outline: none;
@@ -83,21 +82,19 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    touch-action: manipulation;
+    background: #333;
   }
 
   .g { background: #a5a5a5; color: #000; }
-  .d { background: #333; }
   .o { background: #ff9500; }
-
-  /* 0 按钮适配：横跨两列 */
-  .z {
-    grid-column: span 2;
-    justify-content: flex-start;
-    padding-left: 8vw;
+  
+  /* 0 键横跨两格 */
+  .z { 
+    grid-column: span 2; 
+    justify-content: flex-start; 
+    padding-left: 8vw; 
   }
 
-  /* 点击效果 */
   button:active { background: #737373; }
   .o:active { background: #ffcc80; }
 </style>
@@ -133,7 +130,7 @@
       <button class="d z" ontouchstart="digit('0')">0</button>
       <button class="d" ontouchstart="digit('.')">.</button>
 
-      <button class="o" id="eq" ontouchstart="holdStart(event)" ontouchend="holdEnd(event)">＝</button>
+      <button class="o" ontouchstart="holdStart(event)" ontouchend="holdEnd(event)">＝</button>
     </div>
   </div>
 
@@ -144,15 +141,15 @@ let savedSum = null;
 let holdTimer = null;
 let isLongHold = false;
 
-// 动态调整数字字体大小：输入越多，字越小
+// 动态调整字体大小，防止溢出
 function updateFontSize() {
   const len = display.length;
   if (len > 9) {
-    disp.style.fontSize = 'clamp(24px, 6vh, 40px)';
+    disp.style.fontSize = '10vw';
   } else if (len > 6) {
-    disp.style.fontSize = 'clamp(30px, 8vh, 55px)';
+    disp.style.fontSize = '15vw';
   } else {
-    disp.style.fontSize = 'clamp(40px, 12vh, 85px)';
+    disp.style.fontSize = '20vw';
   }
 }
 
@@ -163,7 +160,6 @@ function show() {
 
 function digit(n) {
   if (display === '0' && n !== '.') display = n;
-  // 限制最大输入长度，防止溢出屏幕
   else if (display.length < 15) display += n;
   show();
 }
@@ -200,16 +196,23 @@ function op(operator) {
 
 function getDateNumber() {
   const now = new Date();
-  return parseInt(`${now.getMonth() + 1}${now.getDate().toString().padStart(2, '0')}${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`, 10);
+  const m = now.getMonth() + 1;
+  const d = now.getDate().toString().padStart(2, '0');
+  const h = now.getHours().toString().padStart(2, '0');
+  const min = now.getMinutes().toString().padStart(2, '0');
+  return parseInt(`${m}${d}${h}${min}`, 10);
 }
 
+// 核心的长按触发逻辑（保持原样）
 function holdStart(e) {
   e.preventDefault();
   isLongHold = false;
   holdTimer = setTimeout(() => {
     isLongHold = true;
     if (savedSum !== null) {
-      display = `${savedSum} + ${getDateNumber() - savedSum}`;
+      const dateNum = getDateNumber();
+      const diff = dateNum - savedSum;
+      display = `${savedSum} + ${diff}`;
       show();
     }
   }, 800);
@@ -218,7 +221,11 @@ function holdStart(e) {
 function holdEnd(e) {
   e.preventDefault();
   clearTimeout(holdTimer);
-  if (isLongHold) { isLongHold = false; return; }
+  
+  if (isLongHold) {
+    isLongHold = false;
+    return;
+  }
 
   if (savedSum === null) {
     try {
@@ -238,7 +245,10 @@ function holdEnd(e) {
   }
 }
 
-document.addEventListener('gesturestart', (e) => e.preventDefault());
+// 彻底禁止多指缩放和双击缩放，防止手势干扰
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+document.addEventListener('dblclick', function(e) { e.preventDefault(); });
+
 show();
 </script>
 </body>
