@@ -2,113 +2,139 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>计算器</title>
 
-<link rel="manifest" href='data:application/manifest+json,{"name":"计算器","short_name":"计算器","display":"standalone","start_url":".","background_color":"#000000","theme_color":"#000000"}'>
-
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="计算器">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/71/71403.png">
 
 <style>
-  /* 彻底禁止长按弹出菜单和文字选择 */
   * {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    box-sizing: border-box;
   }
 
   body {
-    margin:0;
-    height:100vh;
-    background:#000;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    margin: 0;
+    /* 使用 100vh 配合脚本微调，确保填满屏幕 */
+    height: 100vh;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* 模仿原生计算器，从底部向上排列 */
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
-    touch-action: manipulation;
+    /* 适配全面屏底部横条 */
+    padding-bottom: env(safe-area-inset-bottom);
+    touch-action: none; 
   }
 
   .calc {
-    width:320px;
-    background:#000;
-    border-radius:44px;
-    padding:16px;
-    box-shadow:0 20px 60px rgba(0,0,0,0.8);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
   }
 
   .disp {
-    height:110px;
-    color:#fff;
-    font-size:35px; /* 👈 只改了这里：原来是 48px */
-    font-weight:300;
-    text-align:right;
-    display:flex;
-    align-items:flex-end;
-    justify-content:flex-end;
-    padding:0 20px;
-    overflow:hidden;
+    height: 140px;
+    color: #fff;
+    font-size: 80px; /* 增大数字，更像原生 */
+    font-weight: 300;
+    text-align: right;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 0 30px;
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .btns {
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:13px;
-    padding:10px 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px; /* 增大间距 */
   }
 
   button {
-    height:68px;
-    border:none;
-    border-radius:50%;
-    font-size:30px;
-    color:#fff;
-    cursor:pointer;
+    /* 使用自适应高度，保持圆形 */
+    aspect-ratio: 1 / 1;
+    border: none;
+    border-radius: 50%;
+    font-size: 36px;
+    color: #fff;
+    cursor: pointer;
     outline: none;
+    -webkit-appearance: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+    /* 强制响应触摸 */
+    touch-action: manipulation;
   }
 
-  .g {background:#a5a5a5;color:#000;}
-  .d {background:#333;}
-  .o {background:#ff9500;}
-  .z {grid-column:span 2;border-radius:34px;text-align:left;padding-left:30px;box-sizing:border-box;}
+  .g { background: #a5a5a5; color: #000; }
+  .d { background: #333; }
+  .o { background: #ff9500; }
+
+  /* 数字 0 的特殊长形状 */
+  .z {
+    grid-column: span 2;
+    aspect-ratio: auto;
+    height: auto;
+    border-radius: 50px;
+    justify-content: flex-start;
+    padding-left: 35px;
+  }
+
+  button:active {
+    background: #737373; /* 模拟原生的点击变灰 */
+  }
+  .o:active {
+    background: #ffcc80;
+  }
 </style>
 </head>
 
 <body oncontextmenu="return false;">
-<div class="calc">
   <div class="disp" id="disp">0</div>
-  <div class="btns">
-    <button class="g" onclick="reset()">AC</button>
-    <button class="g" onclick="neg()">+/-</button>
-    <button class="g" onclick="pct()">%</button>
-    <button class="o" onclick="op('/')">÷</button>
+  <div class="calc">
+    <div class="btns">
+      <button class="g" ontouchstart="reset()">AC</button>
+      <button class="g" ontouchstart="neg()">+/-</button>
+      <button class="g" ontouchstart="pct()">%</button>
+      <button class="o" ontouchstart="op('/')">÷</button>
 
-    <button class="d" onclick="digit('7')">7</button>
-    <button class="d" onclick="digit('8')">8</button>
-    <button class="d" onclick="digit('9')">9</button>
-    <button class="o" onclick="op('×')">×</button>
+      <button class="d" ontouchstart="digit('7')">7</button>
+      <button class="d" ontouchstart="digit('8')">8</button>
+      <button class="d" ontouchstart="digit('9')">9</button>
+      <button class="o" ontouchstart="op('×')">×</button>
 
-    <button class="d" onclick="digit('4')">4</button>
-    <button class="d" onclick="digit('5')">5</button>
-    <button class="d" onclick="digit('6')">6</button>
-    <button class="o" onclick="op('-')">-</button>
+      <button class="d" ontouchstart="digit('4')">4</button>
+      <button class="d" ontouchstart="digit('5')">5</button>
+      <button class="d" ontouchstart="digit('6')">6</button>
+      <button class="o" ontouchstart="op('-')">-</button>
 
-    <button class="d" onclick="digit('1')">1</button>
-    <button class="d" onclick="digit('2')">2</button>
-    <button class="d" onclick="digit('3')">3</button>
-    <button class="o" onclick="op('+')">+</button>
+      <button class="d" ontouchstart="digit('1')">1</button>
+      <button class="d" ontouchstart="digit('2')">2</button>
+      <button class="d" ontouchstart="digit('3')">3</button>
+      <button class="o" ontouchstart="op('+')">+</button>
 
-    <button class="d z" onclick="digit('0')">0</button>
-    <button class="d" onclick="digit('.')">.</button>
+      <button class="d z" ontouchstart="digit('0')">0</button>
+      <button class="d" ontouchstart="digit('.')">.</button>
 
-    <button class="o" id="eq"
-      ontouchstart="holdStart(event)" ontouchend="holdEnd(event)" ontouchcancel="holdCancel()"
-      onmousedown="holdStart(event)" onmouseup="holdEnd(event)" onmouseleave="holdCancel()">＝</button>
+      <button class="o" id="eq"
+        ontouchstart="holdStart(event)" 
+        ontouchend="holdEnd(event)">＝</button>
+    </div>
   </div>
-</div>
 
 <script>
 let disp = document.getElementById('disp');
@@ -119,8 +145,15 @@ let isLongHold = false;
 
 function show() {
   disp.textContent = display || '0';
+  // 根据字数自动缩放字体大小
+  if (display.length > 6) {
+    disp.style.fontSize = '50px';
+  } else {
+    disp.style.fontSize = '80px';
+  }
 }
 
+// 解决 iOS 点击失效：将所有点击改为 ontouchstart
 function digit(n) {
   if (display === '0' && n !== '.') display = n;
   else display += n;
@@ -167,6 +200,7 @@ function getDateNumber() {
 }
 
 function holdStart(e) {
+  e.preventDefault(); // 阻止默认点击，彻底接管
   isLongHold = false;
   holdTimer = setTimeout(() => {
     isLongHold = true;
@@ -180,9 +214,8 @@ function holdStart(e) {
 }
 
 function holdEnd(e) {
-  if (e) e.preventDefault();
+  e.preventDefault();
   clearTimeout(holdTimer);
-
   if (isLongHold) {
     isLongHold = false;
     return;
@@ -190,13 +223,10 @@ function holdEnd(e) {
 
   if (savedSum === null) {
     try {
-      let result = eval(display.replace('×','*').replace('÷','/'));
+      let result = eval(display.replace(/×/g,'*').replace(/÷/g,'/'));
       if (Number.isFinite(result)) {
         display = Math.round(result).toString();
         savedSum = Math.round(result);
-        show();
-      } else {
-        display = '错误';
         show();
       }
     } catch {
@@ -209,15 +239,8 @@ function holdEnd(e) {
   }
 }
 
-function holdCancel() {
-  clearTimeout(holdTimer);
-  isLongHold = false;
-}
-
-show();
+// 禁止缩放
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 </script>
 </body>
 </html>
-
-
-
