@@ -28,12 +28,10 @@
     flex-direction: column;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
-    /* 避开所有刘海和底部黑条 */
     padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 2vh) 0;
     touch-action: none;
   }
 
-  /* 顶部显示区域 */
   .disp-container {
     flex: 1;
     display: flex;
@@ -44,7 +42,6 @@
     width: 100%;
   }
 
-  /* 新增功能：历史记录小字 */
   .history {
     color: #a5a5a5;
     font-size: 24px;
@@ -66,7 +63,6 @@
     width: 100%;
   }
 
-  /* 核心魔法：尺寸取屏幕宽高中的最小值，物理级防溢出 */
   :root {
     --btn-size: min(21vw, 11.5dvh);
     --gap-size: min(3vw, 2dvh);
@@ -91,7 +87,6 @@
     height: 100%;
     border: none;
     border-radius: 50%;
-    /* 字体大小跟随按钮大小等比缩放 */
     font-size: calc(var(--btn-size) * 0.45);
     color: #fff;
     background: #333;
@@ -161,6 +156,18 @@ let savedSum = null;
 let holdTimer = null;
 let isLongHold = false;
 
+// 点击数字复制功能保留
+disp.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(display).then(() => {
+      const originalColor = disp.style.color;
+      disp.style.color = '#4ade80';
+      setTimeout(() => { disp.style.color = originalColor; }, 150);
+    });
+  }
+});
+
 function updateFontSize() {
   const len = display.length;
   if (len > 9) disp.style.fontSize = '40px';
@@ -219,6 +226,7 @@ function getDateNumber() {
   return parseInt(`${m}${d}${h}${min}`, 10);
 }
 
+// 核心修改 1：长按逻辑恢复，只显示拼凑的公式
 function holdStart(e) {
   e.preventDefault();
   isLongHold = false;
@@ -227,23 +235,25 @@ function holdStart(e) {
     if (savedSum !== null) {
       const dateNum = getDateNumber();
       const diff = dateNum - savedSum;
-      historyDisp.textContent = `${savedSum} + ${diff} =`;
-      display = `${savedSum + diff}`;
+      display = `${savedSum} + ${diff}`;
+      historyDisp.textContent = ''; // 长按时把上面的小字清空，让注意力集中在大字上
       show();
     }
   }, 800);
 }
 
+// 核心修改 2：短按逻辑处理魔术揭晓
 function holdEnd(e) {
   e.preventDefault();
   clearTimeout(holdTimer);
   
   if (isLongHold) {
     isLongHold = false;
-    return;
+    return; // 长按松开时不做任何事，保持屏幕上的公式
   }
 
   if (savedSum === null) {
+    // 正常的短按等号计算
     try {
       let calcStr = display.replace(/×/g,'*').replace(/÷/g,'/');
       let result = eval(calcStr);
@@ -258,7 +268,9 @@ function holdEnd(e) {
       show();
     }
   } else {
-    display = getDateNumber().toString();
+    // 魔术揭晓：屏幕上已经是公式时，短按一次等号，显示出最终的时间数字
+    historyDisp.textContent = display + ' ='; // 把刚才的公式移到上方变成小字
+    display = getDateNumber().toString();     // 下方大字揭晓时间
     show();
   }
 }
