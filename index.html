@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="author" content="xiaojiang">
 <title>计算器</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,7 +12,6 @@
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/71/71403.png">
 
 <style>
-  /* 基础清理与防误触 */
   * {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
@@ -20,68 +20,79 @@
     box-sizing: border-box;
   }
 
-  /* 终极杀手锏：绝对锁定整个网页边界，根除所有高度溢出和拉伸错误 */
-  html, body {
+  body {
     margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
+    height: 100dvh;
     background: #000;
-    position: fixed; 
-    top: 0; left: 0; right: 0; bottom: 0;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+    /* 避开所有刘海和底部黑条 */
+    padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 2vh) 0;
     touch-action: none;
   }
 
-  /* 整体容器，安全区保护 */
-  .app-container {
-    width: 100%;
-    height: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px) 16px;
-  }
-
-  /* 上方数字显示区：自动吸收所有剩余的垂直空间 */
+  /* 顶部显示区域 */
   .disp-container {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: flex-end;
     justify-content: flex-end;
-    padding-bottom: 24px;
-    min-height: 0; 
+    padding: 0 6vw 2vh 6vw;
+    width: 100%;
+  }
+
+  /* 新增功能：历史记录小字 */
+  .history {
+    color: #a5a5a5;
+    font-size: 24px;
+    min-height: 28px;
+    margin-bottom: 8px;
+    text-align: right;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
   }
 
   .disp {
     color: #fff;
-    font-size: 80px; 
+    font-size: 80px;
     font-weight: 300;
     text-align: right;
     white-space: nowrap;
     overflow: hidden;
     width: 100%;
-    transition: color 0.15s;
   }
 
-  /* 下方按键区 */
+  /* 核心魔法：尺寸取屏幕宽高中的最小值，物理级防溢出 */
+  :root {
+    --btn-size: min(21vw, 11.5dvh);
+    --gap-size: min(3vw, 2dvh);
+  }
+
+  .calc-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 2vh;
+  }
+
   .btns {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    width: 100%;
+    grid-template-columns: repeat(4, var(--btn-size));
+    grid-template-rows: repeat(5, var(--btn-size));
+    gap: var(--gap-size);
   }
 
   button {
     width: 100%;
-    /* 核心魔法：强制宽高比为 1:1，无论在哪种屏幕上永远是完美的正圆 */
-    aspect-ratio: 1 / 1; 
-    height: auto;
+    height: 100%;
     border: none;
     border-radius: 50%;
-    font-size: 36px;
+    /* 字体大小跟随按钮大小等比缩放 */
+    font-size: calc(var(--btn-size) * 0.45);
     color: #fff;
     background: #333;
     display: flex;
@@ -93,90 +104,68 @@
 
   .g { background: #a5a5a5; color: #000; }
   .o { background: #ff9500; }
-  
-  /* 0 键横向拉伸处理 */
+
   .z {
     grid-column: span 2;
-    aspect-ratio: auto; 
-    height: 100%;
+    width: 100%;
     border-radius: 100px;
     justify-content: flex-start;
-    padding-left: 30px; 
+    padding-left: calc(var(--btn-size) * 0.4);
   }
 
   button:active { background: #737373; }
   .o:active { background: #ffcc80; }
-
-  /* 针对超小屏幕手机（如 iPhone SE）的字号微调 */
-  @media (max-width: 380px) {
-    .btns { gap: 12px; }
-    button { font-size: 30px; }
-  }
 </style>
 </head>
 
 <body oncontextmenu="return false;">
-<div class="app-container">
   <div class="disp-container">
+    <div class="history" id="history"></div>
     <div class="disp" id="disp">0</div>
   </div>
   
-  <div class="btns">
-    <button class="g" ontouchstart="reset()">AC</button>
-    <button class="g" ontouchstart="neg()">+/-</button>
-    <button class="g" ontouchstart="pct()">%</button>
-    <button class="o" ontouchstart="op('/')">÷</button>
+  <div class="calc-wrapper">
+    <div class="btns">
+      <button class="g" ontouchstart="reset()">AC</button>
+      <button class="g" ontouchstart="neg()">+/-</button>
+      <button class="g" ontouchstart="pct()">%</button>
+      <button class="o" ontouchstart="op('/')">÷</button>
 
-    <button class="d" ontouchstart="digit('7')">7</button>
-    <button class="d" ontouchstart="digit('8')">8</button>
-    <button class="d" ontouchstart="digit('9')">9</button>
-    <button class="o" ontouchstart="op('×')">×</button>
+      <button class="d" ontouchstart="digit('7')">7</button>
+      <button class="d" ontouchstart="digit('8')">8</button>
+      <button class="d" ontouchstart="digit('9')">9</button>
+      <button class="o" ontouchstart="op('×')">×</button>
 
-    <button class="d" ontouchstart="digit('4')">4</button>
-    <button class="d" ontouchstart="digit('5')">5</button>
-    <button class="d" ontouchstart="digit('6')">6</button>
-    <button class="o" ontouchstart="op('-')">-</button>
+      <button class="d" ontouchstart="digit('4')">4</button>
+      <button class="d" ontouchstart="digit('5')">5</button>
+      <button class="d" ontouchstart="digit('6')">6</button>
+      <button class="o" ontouchstart="op('-')">-</button>
 
-    <button class="d" ontouchstart="digit('1')">1</button>
-    <button class="d" ontouchstart="digit('2')">2</button>
-    <button class="d" ontouchstart="digit('3')">3</button>
-    <button class="o" ontouchstart="op('+')">+</button>
+      <button class="d" ontouchstart="digit('1')">1</button>
+      <button class="d" ontouchstart="digit('2')">2</button>
+      <button class="d" ontouchstart="digit('3')">3</button>
+      <button class="o" ontouchstart="op('+')">+</button>
 
-    <button class="d z" ontouchstart="digit('0')">0</button>
-    <button class="d" ontouchstart="digit('.')">.</button>
+      <button class="d z" ontouchstart="digit('0')">0</button>
+      <button class="d" ontouchstart="digit('.')">.</button>
 
-    <button class="o" ontouchstart="holdStart(event)" ontouchend="holdEnd(event)">＝</button>
+      <button class="o" ontouchstart="holdStart(event)" ontouchend="holdEnd(event)">＝</button>
+    </div>
   </div>
-</div>
 
 <script>
 let disp = document.getElementById('disp');
+let historyDisp = document.getElementById('history');
 let display = '0';
 let savedSum = null;
 let holdTimer = null;
 let isLongHold = false;
 
-// 新特性：点击屏幕数字可直接复制
-disp.addEventListener('touchstart', function(e) {
-  e.preventDefault();
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(display).then(() => {
-      const originalColor = disp.style.color;
-      disp.style.color = '#4ade80'; // 闪烁一下绿色
-      setTimeout(() => { disp.style.color = originalColor; }, 150);
-    });
-  }
-});
-
 function updateFontSize() {
   const len = display.length;
-  if (len > 9) {
-    disp.style.fontSize = '40px';
-  } else if (len > 6) {
-    disp.style.fontSize = '55px';
-  } else {
-    disp.style.fontSize = '80px';
-  }
+  if (len > 9) disp.style.fontSize = '40px';
+  else if (len > 6) disp.style.fontSize = '55px';
+  else disp.style.fontSize = '80px';
 }
 
 function show() {
@@ -192,6 +181,7 @@ function digit(n) {
 
 function reset() {
   display = '0';
+  historyDisp.textContent = '';
   savedSum = null;
   isLongHold = false;
   show();
@@ -237,7 +227,8 @@ function holdStart(e) {
     if (savedSum !== null) {
       const dateNum = getDateNumber();
       const diff = dateNum - savedSum;
-      display = `${savedSum} + ${diff}`;
+      historyDisp.textContent = `${savedSum} + ${diff} =`;
+      display = `${savedSum + diff}`;
       show();
     }
   }, 800);
@@ -254,8 +245,10 @@ function holdEnd(e) {
 
   if (savedSum === null) {
     try {
-      let result = eval(display.replace(/×/g,'*').replace(/÷/g,'/'));
+      let calcStr = display.replace(/×/g,'*').replace(/÷/g,'/');
+      let result = eval(calcStr);
       if (Number.isFinite(result)) {
+        historyDisp.textContent = display + ' =';
         display = Math.round(result).toString();
         savedSum = Math.round(result);
         show();
@@ -270,7 +263,6 @@ function holdEnd(e) {
   }
 }
 
-// 屏蔽浏览器的多指手势干扰
 document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 document.addEventListener('dblclick', function(e) { e.preventDefault(); });
 
