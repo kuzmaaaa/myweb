@@ -19,52 +19,63 @@
 
   body {
     margin: 0;
+    /* 使用 dvh 确保在移动端浏览器弹出工具栏时也能精准适配 */
     height: 100dvh;
     background: #000;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* 按钮靠底 */
+    justify-content: space-between; /* 均匀分布显示区和按键区 */
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
-    padding-bottom: env(safe-area-inset-bottom); /* 避开底部横条 */
+    padding: env(safe-area-inset-top) 5vw env(safe-area-inset-bottom) 5vw;
     touch-action: none;
   }
 
-  /* 数字显示区域 */
-  .disp {
-    flex: 1; /* 自动占据上方所有剩余空间 */
-    color: #fff;
-    font-size: 20vw; /* 随屏幕宽度缩放字体 */
-    font-weight: 300;
-    text-align: right;
+  /* 显示区域：占据屏幕上半部分，自动缩放 */
+  .disp-container {
+    flex: 1;
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
-    padding: 0 10% 5% 10%;
-    white-space: nowrap;
-    overflow: hidden;
+    width: 100%;
+    padding-bottom: 2vh;
   }
 
-  /* 按键主容器 */
-  .calc-container {
+  .disp {
+    color: #fff;
+    /* 使用 clamp 限制字体大小，最小 40px，最大 80px，随高度变化 */
+    font-size: clamp(40px, 12vh, 85px);
+    font-weight: 300;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
     width: 100%;
-    padding: 0 4% 4% 4%; /* 左右留点边距，更像原生 */
+    /* 数字太长时从右向左显示 */
+    direction: ltr; 
+  }
+
+  /* 按键区域容器 */
+  .calc-wrapper {
+    width: 100%;
+    /* 核心修改：按键区最高只占屏幕的 65%，防止把屏幕撑爆 */
+    max-height: 65dvh;
+    padding-bottom: 10px;
   }
 
   .btns {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* 关键：使用 gap 控制紧凑度 */
-    gap: 3vw; 
+    /* 间距随屏幕高度缩放 */
+    gap: 1.5vh 3vw; 
   }
 
   button {
-    /* 改用宽度百分比作为高度，确保永远是圆的且不会撑破屏幕 */
     width: 100%;
-    aspect-ratio: 1 / 1;
+    /* 核心修改：按钮高度随屏幕高度动态变化，确保垂直方向不溢出 */
+    height: clamp(50px, 11vh, 85px); 
     border: none;
-    border-radius: 50%;
-    font-size: 8vw; /* 字体随屏幕缩放 */
+    border-radius: 500px; /* 使用大圆角替代 50%，适配椭圆 */
+    font-size: clamp(20px, 4vh, 32px);
     color: #fff;
     cursor: pointer;
     outline: none;
@@ -79,25 +90,25 @@
   .d { background: #333; }
   .o { background: #ff9500; }
 
-  /* 0 按钮适配 */
+  /* 0 按钮适配：横跨两列 */
   .z {
     grid-column: span 2;
-    aspect-ratio: auto; 
-    height: 100%; 
-    border-radius: 100px;
     justify-content: flex-start;
     padding-left: 8vw;
   }
 
+  /* 点击效果 */
   button:active { background: #737373; }
   .o:active { background: #ffcc80; }
 </style>
 </head>
 
 <body oncontextmenu="return false;">
-  <div class="disp" id="disp">0</div>
+  <div class="disp-container">
+    <div class="disp" id="disp">0</div>
+  </div>
   
-  <div class="calc-container">
+  <div class="calc-wrapper">
     <div class="btns">
       <button class="g" ontouchstart="reset()">AC</button>
       <button class="g" ontouchstart="neg()">+/-</button>
@@ -122,9 +133,7 @@
       <button class="d z" ontouchstart="digit('0')">0</button>
       <button class="d" ontouchstart="digit('.')">.</button>
 
-      <button class="o" id="eq"
-        ontouchstart="holdStart(event)" 
-        ontouchend="holdEnd(event)">＝</button>
+      <button class="o" id="eq" ontouchstart="holdStart(event)" ontouchend="holdEnd(event)">＝</button>
     </div>
   </div>
 
@@ -135,19 +144,27 @@ let savedSum = null;
 let holdTimer = null;
 let isLongHold = false;
 
+// 动态调整数字字体大小：输入越多，字越小
+function updateFontSize() {
+  const len = display.length;
+  if (len > 9) {
+    disp.style.fontSize = 'clamp(24px, 6vh, 40px)';
+  } else if (len > 6) {
+    disp.style.fontSize = 'clamp(30px, 8vh, 55px)';
+  } else {
+    disp.style.fontSize = 'clamp(40px, 12vh, 85px)';
+  }
+}
+
 function show() {
   disp.textContent = display || '0';
-  // 超过6位自动缩小字体
-  if (display.length > 6) {
-    disp.style.fontSize = '12vw';
-  } else {
-    disp.style.fontSize = '20vw';
-  }
+  updateFontSize();
 }
 
 function digit(n) {
   if (display === '0' && n !== '.') display = n;
-  else if (display.length < 9) display += n;
+  // 限制最大输入长度，防止溢出屏幕
+  else if (display.length < 15) display += n;
   show();
 }
 
@@ -167,7 +184,7 @@ function neg() {
 function pct() {
   let n = parseFloat(display);
   if (!isNaN(n)) {
-    display = (n / 100).toString().substring(0, 9);
+    display = parseFloat((n / 100).toFixed(8)).toString();
     show();
   }
 }
@@ -183,11 +200,7 @@ function op(operator) {
 
 function getDateNumber() {
   const now = new Date();
-  const m = now.getMonth() + 1;
-  const d = now.getDate().toString().padStart(2, '0');
-  const h = now.getHours().toString().padStart(2, '0');
-  const min = now.getMinutes().toString().padStart(2, '0');
-  return parseInt(`${m}${d}${h}${min}`, 10);
+  return parseInt(`${now.getMonth() + 1}${now.getDate().toString().padStart(2, '0')}${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`, 10);
 }
 
 function holdStart(e) {
@@ -196,9 +209,7 @@ function holdStart(e) {
   holdTimer = setTimeout(() => {
     isLongHold = true;
     if (savedSum !== null) {
-      const dateNum = getDateNumber();
-      const diff = dateNum - savedSum;
-      display = `${savedSum} + ${diff}`;
+      display = `${savedSum} + ${getDateNumber() - savedSum}`;
       show();
     }
   }, 800);
@@ -207,15 +218,11 @@ function holdStart(e) {
 function holdEnd(e) {
   e.preventDefault();
   clearTimeout(holdTimer);
-  if (isLongHold) {
-    isLongHold = false;
-    return;
-  }
+  if (isLongHold) { isLongHold = false; return; }
 
   if (savedSum === null) {
     try {
-      let calcStr = display.replace(/×/g,'*').replace(/÷/g,'/');
-      let result = eval(calcStr);
+      let result = eval(display.replace(/×/g,'*').replace(/÷/g,'/'));
       if (Number.isFinite(result)) {
         display = Math.round(result).toString();
         savedSum = Math.round(result);
@@ -231,7 +238,8 @@ function holdEnd(e) {
   }
 }
 
-document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+show();
 </script>
 </body>
 </html>
