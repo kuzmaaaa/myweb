@@ -20,119 +20,134 @@
     box-sizing: border-box;
   }
 
-  body {
+  /* 终极杀手锏：绝对锁定整个网页边界，根除所有高度溢出和拉伸错误 */
+  html, body {
     margin: 0;
-    /* 关键：100dvh 完美适配 Safari 动态地址栏 */
-    height: 100dvh; 
+    padding: 0;
+    width: 100%;
+    height: 100%;
     background: #000;
-    display: flex;
-    flex-direction: column;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    position: fixed; 
+    top: 0; left: 0; right: 0; bottom: 0;
     overflow: hidden;
-    /* 底部额外留白，避开工具栏和小黑条 */
-    padding: env(safe-area-inset-top) 4vw calc(env(safe-area-inset-bottom) + 3vh) 4vw;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     touch-action: none;
   }
 
-  /* 上方数字显示区：占满剩余所有空间 */
+  /* 整体容器，安全区保护 */
+  .app-container {
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px) 16px;
+  }
+
+  /* 上方数字显示区：自动吸收所有剩余的垂直空间 */
   .disp-container {
     flex: 1;
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
-    width: 100%;
-    padding-bottom: 2vh;
+    padding-bottom: 24px;
+    min-height: 0; 
   }
 
   .disp {
     color: #fff;
-    font-size: 20vw;
+    font-size: 80px; 
     font-weight: 300;
     text-align: right;
     white-space: nowrap;
     overflow: hidden;
     width: 100%;
+    transition: color 0.15s;
   }
 
-  /* 下方按键区：固定结构，防止溢出 */
-  .calc-wrapper {
-    width: 100%;
-    /* 强制限制最大高度，防止把下面的按钮挤出屏幕 */
-    max-height: 60dvh; 
-  }
-
+  /* 下方按键区 */
   .btns {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    /* 行间距和列间距 */
-    gap: 2.5vh 3.5vw; 
+    gap: 16px;
+    width: 100%;
   }
 
   button {
     width: 100%;
-    /* 保证按键在各种屏幕下都不会太高或太扁 */
-    height: clamp(50px, 10dvh, 90px);
+    /* 核心魔法：强制宽高比为 1:1，无论在哪种屏幕上永远是完美的正圆 */
+    aspect-ratio: 1 / 1; 
+    height: auto;
     border: none;
-    border-radius: 500px;
-    font-size: clamp(24px, 4.5dvh, 40px);
+    border-radius: 50%;
+    font-size: 36px;
     color: #fff;
-    cursor: pointer;
-    outline: none;
-    -webkit-appearance: none;
+    background: #333;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #333;
+    outline: none;
+    -webkit-appearance: none;
   }
 
   .g { background: #a5a5a5; color: #000; }
   .o { background: #ff9500; }
   
-  /* 0 键横跨两格 */
-  .z { 
-    grid-column: span 2; 
-    justify-content: flex-start; 
-    padding-left: 8vw; 
+  /* 0 键横向拉伸处理 */
+  .z {
+    grid-column: span 2;
+    aspect-ratio: auto; 
+    height: 100%;
+    border-radius: 100px;
+    justify-content: flex-start;
+    padding-left: 30px; 
   }
 
   button:active { background: #737373; }
   .o:active { background: #ffcc80; }
+
+  /* 针对超小屏幕手机（如 iPhone SE）的字号微调 */
+  @media (max-width: 380px) {
+    .btns { gap: 12px; }
+    button { font-size: 30px; }
+  }
 </style>
 </head>
 
 <body oncontextmenu="return false;">
+<div class="app-container">
   <div class="disp-container">
     <div class="disp" id="disp">0</div>
   </div>
   
-  <div class="calc-wrapper">
-    <div class="btns">
-      <button class="g" ontouchstart="reset()">AC</button>
-      <button class="g" ontouchstart="neg()">+/-</button>
-      <button class="g" ontouchstart="pct()">%</button>
-      <button class="o" ontouchstart="op('/')">÷</button>
+  <div class="btns">
+    <button class="g" ontouchstart="reset()">AC</button>
+    <button class="g" ontouchstart="neg()">+/-</button>
+    <button class="g" ontouchstart="pct()">%</button>
+    <button class="o" ontouchstart="op('/')">÷</button>
 
-      <button class="d" ontouchstart="digit('7')">7</button>
-      <button class="d" ontouchstart="digit('8')">8</button>
-      <button class="d" ontouchstart="digit('9')">9</button>
-      <button class="o" ontouchstart="op('×')">×</button>
+    <button class="d" ontouchstart="digit('7')">7</button>
+    <button class="d" ontouchstart="digit('8')">8</button>
+    <button class="d" ontouchstart="digit('9')">9</button>
+    <button class="o" ontouchstart="op('×')">×</button>
 
-      <button class="d" ontouchstart="digit('4')">4</button>
-      <button class="d" ontouchstart="digit('5')">5</button>
-      <button class="d" ontouchstart="digit('6')">6</button>
-      <button class="o" ontouchstart="op('-')">-</button>
+    <button class="d" ontouchstart="digit('4')">4</button>
+    <button class="d" ontouchstart="digit('5')">5</button>
+    <button class="d" ontouchstart="digit('6')">6</button>
+    <button class="o" ontouchstart="op('-')">-</button>
 
-      <button class="d" ontouchstart="digit('1')">1</button>
-      <button class="d" ontouchstart="digit('2')">2</button>
-      <button class="d" ontouchstart="digit('3')">3</button>
-      <button class="o" ontouchstart="op('+')">+</button>
+    <button class="d" ontouchstart="digit('1')">1</button>
+    <button class="d" ontouchstart="digit('2')">2</button>
+    <button class="d" ontouchstart="digit('3')">3</button>
+    <button class="o" ontouchstart="op('+')">+</button>
 
-      <button class="d z" ontouchstart="digit('0')">0</button>
-      <button class="d" ontouchstart="digit('.')">.</button>
+    <button class="d z" ontouchstart="digit('0')">0</button>
+    <button class="d" ontouchstart="digit('.')">.</button>
 
-      <button class="o" ontouchstart="holdStart(event)" ontouchend="holdEnd(event)">＝</button>
-    </div>
+    <button class="o" ontouchstart="holdStart(event)" ontouchend="holdEnd(event)">＝</button>
   </div>
+</div>
 
 <script>
 let disp = document.getElementById('disp');
@@ -141,15 +156,26 @@ let savedSum = null;
 let holdTimer = null;
 let isLongHold = false;
 
-// 动态调整字体大小，防止溢出
+// 新特性：点击屏幕数字可直接复制
+disp.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(display).then(() => {
+      const originalColor = disp.style.color;
+      disp.style.color = '#4ade80'; // 闪烁一下绿色
+      setTimeout(() => { disp.style.color = originalColor; }, 150);
+    });
+  }
+});
+
 function updateFontSize() {
   const len = display.length;
   if (len > 9) {
-    disp.style.fontSize = '10vw';
+    disp.style.fontSize = '40px';
   } else if (len > 6) {
-    disp.style.fontSize = '15vw';
+    disp.style.fontSize = '55px';
   } else {
-    disp.style.fontSize = '20vw';
+    disp.style.fontSize = '80px';
   }
 }
 
@@ -203,7 +229,6 @@ function getDateNumber() {
   return parseInt(`${m}${d}${h}${min}`, 10);
 }
 
-// 核心的长按触发逻辑（保持原样）
 function holdStart(e) {
   e.preventDefault();
   isLongHold = false;
@@ -245,7 +270,7 @@ function holdEnd(e) {
   }
 }
 
-// 彻底禁止多指缩放和双击缩放，防止手势干扰
+// 屏蔽浏览器的多指手势干扰
 document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 document.addEventListener('dblclick', function(e) { e.preventDefault(); });
 
