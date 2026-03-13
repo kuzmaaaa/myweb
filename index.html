@@ -7,8 +7,6 @@
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="计算器">
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/71/71403.png">
 
 <style>
   * {
@@ -21,53 +19,52 @@
 
   body {
     margin: 0;
-    /* 使用 100vh 配合脚本微调，确保填满屏幕 */
-    height: 100vh;
+    height: 100dvh;
     background: #000;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* 模仿原生计算器，从底部向上排列 */
+    justify-content: flex-end; /* 按钮靠底 */
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
-    /* 适配全面屏底部横条 */
-    padding-bottom: env(safe-area-inset-bottom);
-    touch-action: none; 
+    padding-bottom: env(safe-area-inset-bottom); /* 避开底部横条 */
+    touch-action: none;
   }
 
-  .calc {
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-
+  /* 数字显示区域 */
   .disp {
-    height: 140px;
+    flex: 1; /* 自动占据上方所有剩余空间 */
     color: #fff;
-    font-size: 80px; /* 增大数字，更像原生 */
+    font-size: 20vw; /* 随屏幕宽度缩放字体 */
     font-weight: 300;
     text-align: right;
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
-    padding: 0 30px;
-    margin-bottom: 10px;
+    padding: 0 10% 5% 10%;
     white-space: nowrap;
     overflow: hidden;
+  }
+
+  /* 按键主容器 */
+  .calc-container {
+    width: 100%;
+    padding: 0 4% 4% 4%; /* 左右留点边距，更像原生 */
   }
 
   .btns {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 15px; /* 增大间距 */
+    /* 关键：使用 gap 控制紧凑度 */
+    gap: 3vw; 
   }
 
   button {
-    /* 使用自适应高度，保持圆形 */
+    /* 改用宽度百分比作为高度，确保永远是圆的且不会撑破屏幕 */
+    width: 100%;
     aspect-ratio: 1 / 1;
     border: none;
     border-radius: 50%;
-    font-size: 36px;
+    font-size: 8vw; /* 字体随屏幕缩放 */
     color: #fff;
     cursor: pointer;
     outline: none;
@@ -75,8 +72,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: background 0.2s;
-    /* 强制响应触摸 */
     touch-action: manipulation;
   }
 
@@ -84,28 +79,25 @@
   .d { background: #333; }
   .o { background: #ff9500; }
 
-  /* 数字 0 的特殊长形状 */
+  /* 0 按钮适配 */
   .z {
     grid-column: span 2;
-    aspect-ratio: auto;
-    height: auto;
-    border-radius: 50px;
+    aspect-ratio: auto; 
+    height: 100%; 
+    border-radius: 100px;
     justify-content: flex-start;
-    padding-left: 35px;
+    padding-left: 8vw;
   }
 
-  button:active {
-    background: #737373; /* 模拟原生的点击变灰 */
-  }
-  .o:active {
-    background: #ffcc80;
-  }
+  button:active { background: #737373; }
+  .o:active { background: #ffcc80; }
 </style>
 </head>
 
 <body oncontextmenu="return false;">
   <div class="disp" id="disp">0</div>
-  <div class="calc">
+  
+  <div class="calc-container">
     <div class="btns">
       <button class="g" ontouchstart="reset()">AC</button>
       <button class="g" ontouchstart="neg()">+/-</button>
@@ -145,18 +137,17 @@ let isLongHold = false;
 
 function show() {
   disp.textContent = display || '0';
-  // 根据字数自动缩放字体大小
+  // 超过6位自动缩小字体
   if (display.length > 6) {
-    disp.style.fontSize = '50px';
+    disp.style.fontSize = '12vw';
   } else {
-    disp.style.fontSize = '80px';
+    disp.style.fontSize = '20vw';
   }
 }
 
-// 解决 iOS 点击失效：将所有点击改为 ontouchstart
 function digit(n) {
   if (display === '0' && n !== '.') display = n;
-  else display += n;
+  else if (display.length < 9) display += n;
   show();
 }
 
@@ -176,7 +167,7 @@ function neg() {
 function pct() {
   let n = parseFloat(display);
   if (!isNaN(n)) {
-    display = (n / 100).toString();
+    display = (n / 100).toString().substring(0, 9);
     show();
   }
 }
@@ -200,7 +191,7 @@ function getDateNumber() {
 }
 
 function holdStart(e) {
-  e.preventDefault(); // 阻止默认点击，彻底接管
+  e.preventDefault();
   isLongHold = false;
   holdTimer = setTimeout(() => {
     isLongHold = true;
@@ -223,7 +214,8 @@ function holdEnd(e) {
 
   if (savedSum === null) {
     try {
-      let result = eval(display.replace(/×/g,'*').replace(/÷/g,'/'));
+      let calcStr = display.replace(/×/g,'*').replace(/÷/g,'/');
+      let result = eval(calcStr);
       if (Number.isFinite(result)) {
         display = Math.round(result).toString();
         savedSum = Math.round(result);
@@ -239,7 +231,6 @@ function holdEnd(e) {
   }
 }
 
-// 禁止缩放
 document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 </script>
 </body>
